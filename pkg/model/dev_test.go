@@ -971,6 +971,56 @@ func TestPersistentVolumeEnabled(t *testing.T) {
 	}
 }
 
+func TestSecurityContextEnabled(t *testing.T) {
+	var tests = []struct {
+		name     string
+		manifest []byte
+		expected bool
+	}{
+		{
+			name: "default",
+			manifest: []byte(`
+      name: deployment
+      container: core
+      image: code/core:0.1.8`),
+			expected: true,
+		},
+		{
+			name: "set",
+			manifest: []byte(`
+      name: deployment
+      container: core
+      image: code/core:0.1.8
+      securityContext:
+        enabled: true`),
+			expected: true,
+		},
+		{
+			name: "disabled",
+			manifest: []byte(`
+      name: deployment
+      container: core
+      image: code/core:0.1.8
+      securityContext:
+        enabled: false`),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dev, err := Read(tt.manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if dev.SecurityContextEnabled() != tt.expected {
+				t.Errorf("Expecting %t but got %t", tt.expected, dev.SecurityContextEnabled())
+			}
+		})
+	}
+}
+
 func Test_ExpandEnv(t *testing.T) {
 	os.Setenv("BAR", "bar")
 	tests := []struct {
