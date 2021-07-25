@@ -189,6 +189,7 @@ type SecurityContext struct {
 	RunAsGroup   *int64        `json:"runAsGroup,omitempty" yaml:"runAsGroup,omitempty"`
 	FSGroup      *int64        `json:"fsGroup,omitempty" yaml:"fsGroup,omitempty"`
 	Capabilities *Capabilities `json:"capabilities,omitempty" yaml:"capabilities,omitempty"`
+	Enabled      *bool         `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 }
 
 // Capabilities sets the linux capabilities of a container
@@ -566,8 +567,21 @@ func setBuildDefaults(build *BuildInfo) {
 	}
 }
 
+func (dev *Dev) SecurityContextEnabled() bool {
+	if dev.SecurityContext == nil {
+		return true
+	}
+	if dev.SecurityContext.Enabled == nil {
+		return true
+	}
+	return *dev.SecurityContext.Enabled
+}
+
 func (dev *Dev) setRunAsUserDefaults(main *Dev) {
 	if !main.PersistentVolumeEnabled() {
+		return
+	}
+	if !main.SecurityContextEnabled() {
 		return
 	}
 	if dev.SecurityContext == nil {

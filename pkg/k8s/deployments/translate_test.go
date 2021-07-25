@@ -622,6 +622,177 @@ persistentVolume:
 	}
 }
 
+func Test_translateWithoutSecurityContext(t *testing.T) {
+	manifest := []byte(`name: web
+namespace: n
+image: web:latest
+sync:
+  - .:/app
+securityContext:
+  enabled: false`)
+	dev, err := model.Read(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dev.Username = "cindy"
+	dev.RegistryURL = "registry.okteto.dev"
+	d := dev.GevSandbox()
+	rule := dev.ToTranslationRule(dev, false)
+	tr := &model.Translation{
+		Interactive: true,
+		Name:        dev.Name,
+		Version:     model.TranslationVersion,
+		Deployment:  d,
+		Rules:       []*model.TranslationRule{rule},
+	}
+	err = translate(tr, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dOK := &appsv1.Deployment{
+		Spec: appsv1.DeploymentSpec{
+			Template: apiv1.PodTemplateSpec{
+				Spec: apiv1.PodSpec{
+					TerminationGracePeriodSeconds: &devTerminationGracePeriodSeconds,
+					SecurityContext:               &apiv1.PodSecurityContext{},
+					Volumes: []apiv1.Volume{
+						{
+							Name: oktetoSyncSecretVolume,
+							VolumeSource: apiv1.VolumeSource{
+								Secret: &apiv1.SecretVolumeSource{
+									SecretName: "okteto-web",
+									Items: []apiv1.KeyToPath{
+										{
+											Key:  "config.xml",
+											Path: "config.xml",
+											Mode: &mode444,
+										},
+										{
+											Key:  "cert.pem",
+											Path: "cert.pem",
+											Mode: &mode444,
+										},
+										{
+											Key:  "key.pem",
+											Path: "key.pem",
+											Mode: &mode444,
+										},
+									},
+								},
+							},
+						},
+						{
+							Name: dev.GetVolumeName(),
+							VolumeSource: apiv1.VolumeSource{
+								PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+									ClaimName: dev.GetVolumeName(),
+									ReadOnly:  false,
+								},
+							},
+						},
+						{
+							Name: OktetoBinName,
+							VolumeSource: apiv1.VolumeSource{
+								EmptyDir: &apiv1.EmptyDirVolumeSource{},
+							},
+						},
+					},
+					InitContainers: []apiv1.Container{
+						{
+							Name:            OktetoBinName,
+							Image:           model.OktetoBinImageTag,
+							ImagePullPolicy: apiv1.PullIfNotPresent,
+							Command:         []string{"sh", "-c", "cp /usr/local/bin/* /okteto/bin"},
+							VolumeMounts: []apiv1.VolumeMount{
+								{
+									Name:      OktetoBinName,
+									MountPath: "/okteto/bin",
+								},
+							},
+						},
+						{
+							Name:            OktetoInitVolumeContainerName,
+							Image:           "web:latest",
+							ImagePullPolicy: apiv1.PullIfNotPresent,
+							Command:         []string{"sh", "-cx", "echo initializing && ( [ \"$(ls -A /init-volume/1)\" ] || cp -R /app/. /init-volume/1 || true)"},
+							SecurityContext: &apiv1.SecurityContext{},
+							VolumeMounts: []apiv1.VolumeMount{
+								{
+									Name:      dev.GetVolumeName(),
+									ReadOnly:  false,
+									MountPath: "/init-volume/1",
+									SubPath:   model.SourceCodeSubPath,
+								},
+							},
+						},
+					},
+					Containers: []apiv1.Container{
+						{
+							Name:            "dev",
+							Image:           "web:latest",
+							ImagePullPolicy: apiv1.PullAlways,
+							Command:         []string{"/var/okteto/bin/start.sh"},
+							Args:            []string{"-r", "-v"},
+							Env: []apiv1.EnvVar{
+								{
+									Name:  "OKTETO_NAMESPACE",
+									Value: "n",
+								},
+								{
+									Name:  "OKTETO_NAME",
+									Value: "web",
+								},
+								{
+									Name:  "OKTETO_USERNAME",
+									Value: "cindy",
+								},
+							},
+							SecurityContext: &apiv1.SecurityContext{},
+							VolumeMounts: []apiv1.VolumeMount{
+								{
+									Name:      dev.GetVolumeName(),
+									ReadOnly:  false,
+									MountPath: "/var/syncthing",
+									SubPath:   model.SyncthingSubPath,
+								},
+								{
+									Name:      dev.GetVolumeName(),
+									ReadOnly:  false,
+									MountPath: model.RemoteMountPath,
+									SubPath:   model.RemoteSubPath,
+								},
+								{
+									Name:      dev.GetVolumeName(),
+									ReadOnly:  false,
+									MountPath: "/app",
+									SubPath:   model.SourceCodeSubPath,
+								},
+								{
+									Name:      oktetoSyncSecretVolume,
+									ReadOnly:  false,
+									MountPath: "/var/syncthing/secret/",
+								},
+								{
+									Name:      OktetoBinName,
+									ReadOnly:  false,
+									MountPath: "/var/okteto/bin",
+								},
+							},
+							LivenessProbe:  nil,
+							ReadinessProbe: nil,
+						},
+					},
+				},
+			},
+		},
+	}
+	marshalled, _ := yaml.Marshal(d.Spec.Template.Spec)
+	marshalledOK, _ := yaml.Marshal(dOK.Spec.Template.Spec)
+	if string(marshalled) != string(marshalledOK) {
+		t.Fatalf("Wrong d generation.\nActual %+v, \nExpected %+v", string(marshalled), string(marshalledOK))
+	}
+}
+
 func Test_translateWithDocker(t *testing.T) {
 	manifest := []byte(`name: web
 namespace: n
