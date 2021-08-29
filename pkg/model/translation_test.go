@@ -537,7 +537,7 @@ services:
               Image:             "web:latest",
               ImagePullPolicy:   apiv1.PullAlways,
               Command:           []string{"/var/okteto/bin/start.sh"},
-              Args:              []string{"-r", "-v"},
+              Args:              []string{"-r"},
               Probes:            &Probes{},
               Lifecycle:         &Lifecycle{},
               Environment: Environment{
