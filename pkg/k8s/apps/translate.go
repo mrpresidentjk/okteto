@@ -50,6 +50,8 @@ const (
 var (
 	devReplicas                      int32 = 1
 	devTerminationGracePeriodSeconds int64
+	falseBoolean                     = false
+	trueBoolean                      = true
 )
 
 func translate(t *model.Translation, c *kubernetes.Clientset, isOktetoNamespace bool) error {
