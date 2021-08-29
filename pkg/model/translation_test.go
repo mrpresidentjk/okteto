@@ -495,25 +495,18 @@ func TestDevToTranslationRuleRunAsNonRoot(t *testing.T) {
 namespace: n
 container: dev
 image: web:latest
-command: ["./run_web.sh"]
-sync:
-  - .:/app
 services:
-  - name: no-defaults
+  - name: root-user-with-defaults
     container: dev
     image: worker:latest
     securityContext:
        runAsNonRoot: true
-    sync:
-      - worker:/src
-  - name: with-root-defaults
+  - name: non-root-user-without-overrides
     container: dev
     image: worker:latest
     securityContext:
        runAsNonRoot: false
-    sync:
-      - worker:/src
-  - name: with-overrides
+  - name: non-root-user-with-overrides
     container: dev
     image: worker:latest
     securityContext:
@@ -521,8 +514,14 @@ services:
        runAsGroup: 101
        fsGroup: 102
        runAsNonRoot: true
-    sync:
-      - worker:/src`)
+  - name: root-user-with-overrides
+    container: dev
+    image: worker:latest
+    securityContext:
+       runAsUser: 100
+       runAsGroup: 101
+       fsGroup: 102
+       runAsNonRoot: false`)
 
 	dev, err := Read(manifest)
 	if err != nil {
@@ -568,11 +567,6 @@ services:
 				MountPath: RemoteMountPath,
 				SubPath:   RemoteSubPath,
 			},
-			{
-				Name:      dev.GetVolumeName(),
-				MountPath: "/app",
-				SubPath:   SourceCodeSubPath,
-			},
 		},
 		InitContainer: InitContainer{Image: OktetoBinImageTag},
 	}
@@ -603,13 +597,7 @@ services:
 		},
 		Resources:        ResourceRequirements{},
 		PersistentVolume: true,
-		Volumes: []VolumeMount{
-			{
-				Name:      dev.GetVolumeName(),
-				MountPath: "/src",
-				SubPath:   path.Join(SourceCodeSubPath, "worker"),
-			},
-		},
+		Volumes:          []VolumeMount{},
 	}
 
 	marshalled2, _ := yaml.Marshal(rule2)
@@ -638,13 +626,7 @@ services:
 		},
 		Resources:        ResourceRequirements{},
 		PersistentVolume: true,
-		Volumes: []VolumeMount{
-			{
-				Name:      dev.GetVolumeName(),
-				MountPath: "/src",
-				SubPath:   path.Join(SourceCodeSubPath, "worker"),
-			},
-		},
+		Volumes:          []VolumeMount{},
 	}
 
 	marshalled3, _ := yaml.Marshal(rule3)
@@ -677,18 +659,41 @@ services:
 		},
 		Resources:        ResourceRequirements{},
 		PersistentVolume: true,
-		Volumes: []VolumeMount{
-			{
-				Name:      dev.GetVolumeName(),
-				MountPath: "/src",
-				SubPath:   path.Join(SourceCodeSubPath, "worker"),
-			},
-		},
+		Volumes:          []VolumeMount{},
 	}
 
 	marshalled4, _ := yaml.Marshal(rule4)
 	marshalled4OK, _ := yaml.Marshal(rule4OK)
 	if string(marshalled4) != string(marshalled4OK) {
 		t.Fatalf("Wrong rule4 generation.\nActual %s, \nExpected %s", string(marshalled4), string(marshalled4OK))
+	}
+
+	dev5 := dev.Services[3]
+	rule5 := dev5.ToTranslationRule(dev, false)
+	rule5OK := &TranslationRule{
+		Container:       "dev",
+		Image:           "worker:latest",
+		ImagePullPolicy: apiv1.PullAlways,
+		Command:         nil,
+		Args:            nil,
+		Healthchecks:    false,
+		Probes:          &Probes{},
+		Lifecycle:       &Lifecycle{},
+		Environment:     make(Environment, 0),
+		SecurityContext: &SecurityContext{
+			RunAsUser:    &runAsUser,
+			RunAsGroup:   &runAsGroup,
+			FSGroup:      &fsGroup,
+			RunAsNonRoot: &falseBoolean,
+		},
+		Resources:        ResourceRequirements{},
+		PersistentVolume: true,
+		Volumes:          []VolumeMount{},
+	}
+
+	marshalled5, _ := yaml.Marshal(rule5)
+	marshalled5OK, _ := yaml.Marshal(rule5OK)
+	if string(marshalled4) != string(marshalled4OK) {
+		t.Fatalf("Wrong rule4 generation.\nActual %s, \nExpected %s", string(marshalled5), string(marshalled5OK))
 	}
 }
