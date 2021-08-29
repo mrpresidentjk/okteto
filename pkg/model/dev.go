@@ -721,7 +721,7 @@ func (dev *Dev) isRootUser() bool {
 // validateSecurityContext checks to see if a root user is specified with runAsNonRoot enabled
 func (dev *Dev) validateSecurityContext() error {
 	if dev.isRootUser() && dev.RunAsNonRoot() {
-		return fmt.Errorf("Running as Root breaks runAsNonRoot constraint of the pod securityContext")
+		return fmt.Errorf("Running as the root user breaks runAsNonRoot constraint of the securityContext")
 	}
 	return nil
 }
