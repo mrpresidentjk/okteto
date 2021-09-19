@@ -10,12 +10,14 @@ orbs:
 jobs:
   build:
     docker:
-      - image: okteto/golang-ci:1.16
+      - image: okteto/golang-ci:1.17.3
     steps:
       - checkout
       - restore_cache:
           keys:
             - v3-pkg-cache-{{ checksum "go.sum" }}
+      - run:
+          command: go mod tidy && git diff --exit-code go.sum > /dev/null
       - run:
           name: Test
           command: |
@@ -81,7 +83,7 @@ jobs:
           path: /root/.okteto
   mock-release:
     docker:
-      - image: okteto/golang-ci:1.16
+      - image: okteto/golang-ci:1.17.3
     steps:
       - checkout
       - attach_workspace:
@@ -158,7 +160,7 @@ jobs:
           path: C:\Users\circleci\.okteto
   release:
     docker:
-      - image: okteto/golang-ci:1.16
+      - image: okteto/golang-ci:1.17.3
     steps:
       - checkout
       - attach_workspace:
@@ -194,9 +196,14 @@ jobs:
             ./update_homebrew_formula.sh $CIRCLE_TAG $sha $sha_arm
             pushd homebrew-cli
             git push git@github.com:okteto/homebrew-cli.git master
+      - deploy:
+          name: Auto-update-actions
+          command: |
+            go get -u github.com/tcnksm/ghr
+            ./update_actions.sh $CIRCLE_TAG
   release-master:
     docker:
-      - image: okteto/golang-ci:1.16
+      - image: okteto/golang-ci:1.17.3
     steps:
       - checkout
       - setup_remote_docker:

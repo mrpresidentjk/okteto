@@ -49,7 +49,7 @@ type Namespace struct {
 
 // CreateNamespace creates a namespace
 func CreateNamespace(ctx context.Context, namespace string) (string, error) {
-	if err := validateNamespace(namespace); err != nil {
+	if err := validateNamespace(namespace, "namespace"); err != nil {
 		return "", err
 	}
 	q := fmt.Sprintf(`mutation{
@@ -122,18 +122,18 @@ func DeleteNamespace(ctx context.Context, namespace string) error {
 	return query(ctx, q, &body)
 }
 
-func validateNamespace(namespace string) error {
+func validateNamespace(namespace, object string) error {
 	if len(namespace) > MAX_ALLOWED_CHARS {
 		return errors.UserError{
-			E:    fmt.Errorf("Invalid namespace name."),
-			Hint: "Namespace name must be shorter than 63 characters.",
+			E:    fmt.Errorf("invalid %s name", object),
+			Hint: fmt.Sprintf("%s name must be shorter than 63 characters.", object),
 		}
 	}
 	nameValidationRegex := regexp.MustCompile("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 	if !nameValidationRegex.MatchString(namespace) {
 		return errors.UserError{
-			E:    fmt.Errorf("Invalid namespace name."),
-			Hint: "Namespace name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character",
+			E:    fmt.Errorf("invalid %s name", object),
+			Hint: fmt.Sprintf("%s name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character", object),
 		}
 	}
 	return nil
