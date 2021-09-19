@@ -532,16 +532,14 @@ func TranslateContainerSecurityContext(c *apiv1.Container, s *model.SecurityCont
 
 	if s.RunAsUser != nil {
 		c.SecurityContext.RunAsUser = s.RunAsUser
-		if *s.RunAsUser == 0 {
-			c.SecurityContext.RunAsNonRoot = &falseBoolean
-		}
 	}
 
 	if s.RunAsGroup != nil {
 		c.SecurityContext.RunAsGroup = s.RunAsGroup
-		if *s.RunAsGroup == 0 {
-			c.SecurityContext.RunAsNonRoot = &falseBoolean
-		}
+	}
+
+	if s.RunAsNonRoot != nil {
+		c.SecurityContext.RunAsNonRoot = s.RunAsNonRoot
 	}
 
 	if s.Capabilities == nil {

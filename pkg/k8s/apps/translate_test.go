@@ -463,9 +463,8 @@ services:
 							Command:         []string{"./run_worker.sh"},
 							Args:            []string{},
 							SecurityContext: &apiv1.SecurityContext{
-								RunAsUser:    &rootUser,
-								RunAsGroup:   &rootUser,
-								RunAsNonRoot: &falseBoolean,
+								RunAsUser:  &rootUser,
+								RunAsGroup: &rootUser,
 							},
 							VolumeMounts: []apiv1.VolumeMount{
 								{
@@ -765,9 +764,8 @@ docker:
 							ImagePullPolicy: apiv1.PullIfNotPresent,
 							Command:         []string{"sh", "-cx", "echo initializing && ( [ \"$(ls -A /init-volume/1)\" ] || cp -R /app/. /init-volume/1 || true)"},
 							SecurityContext: &apiv1.SecurityContext{
-								RunAsUser:    &rootUser,
-								RunAsGroup:   &rootUser,
-								RunAsNonRoot: &falseBoolean,
+								RunAsUser:  &rootUser,
+								RunAsGroup: &rootUser,
 							},
 							VolumeMounts: []apiv1.VolumeMount{
 								{
@@ -817,9 +815,8 @@ docker:
 								},
 							},
 							SecurityContext: &apiv1.SecurityContext{
-								RunAsUser:    &rootUser,
-								RunAsGroup:   &rootUser,
-								RunAsNonRoot: &falseBoolean,
+								RunAsUser:  &rootUser,
+								RunAsGroup: &rootUser,
 							},
 							VolumeMounts: []apiv1.VolumeMount{
 								{
@@ -1342,9 +1339,8 @@ environment:
 							ImagePullPolicy: apiv1.PullIfNotPresent,
 							Command:         []string{"sh", "-cx", "echo initializing && ( [ \"$(ls -A /init-volume/1)\" ] || cp -R /app/. /init-volume/1 || true)"},
 							SecurityContext: &apiv1.SecurityContext{
-								RunAsUser:    &rootUser,
-								RunAsGroup:   &rootUser,
-								RunAsNonRoot: &falseBoolean,
+								RunAsUser:  &rootUser,
+								RunAsGroup: &rootUser,
 							},
 							VolumeMounts: []apiv1.VolumeMount{
 								{
@@ -1398,9 +1394,8 @@ environment:
 								},
 							},
 							SecurityContext: &apiv1.SecurityContext{
-								RunAsUser:    &rootUser,
-								RunAsGroup:   &rootUser,
-								RunAsNonRoot: &falseBoolean,
+								RunAsUser:  &rootUser,
+								RunAsGroup: &rootUser,
 							},
 							VolumeMounts: []apiv1.VolumeMount{
 								{
